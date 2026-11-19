@@ -17,6 +17,8 @@ import { MainRoutes } from '@/router/MainRoutes';
 import {
   IconGithub,
   IconSidebarAuthFiles,
+  IconSidebarBalance,
+  IconSidebarModels,
   IconSidebarConfig,
   IconSidebarDashboard,
   IconSidebarLogs,
@@ -66,6 +68,8 @@ const sidebarIcons: Record<string, ReactNode> = {
   oauth: <IconSidebarOauth size={SIDEBAR_ICON_SIZE} />,
   usageAnalytics: <IconSidebarUsage size={SIDEBAR_ICON_SIZE} />,
   monitoring: <IconSidebarMonitor size={SIDEBAR_ICON_SIZE} />,
+  sourceBalance: <IconSidebarBalance size={SIDEBAR_ICON_SIZE} />,
+  sourceModels: <IconSidebarModels size={SIDEBAR_ICON_SIZE} />,
   plugins: <IconSidebarPlugins size={SIDEBAR_ICON_SIZE} />,
   config: <IconSidebarConfig size={SIDEBAR_ICON_SIZE} />,
   logs: <IconSidebarLogs size={SIDEBAR_ICON_SIZE} />,
@@ -545,6 +549,12 @@ function MainLayoutContent({ routeBase = '', demoMode = false }: MainLayoutProps
           icon: sidebarIcons.system,
         }
       : null;
+  const sourceBalanceNavItem: NavItem = {
+    path: '/source-balance',
+    label: t('nav.source_balance'),
+    shortLabel: navShortLabel('nav.source_balance', t('nav.source_balance')),
+    icon: sidebarIcons.sourceBalance,
+  };
   const operationNavItems: NavItem[] = [
     {
       path: '/logs',
@@ -577,6 +587,13 @@ function MainLayoutContent({ routeBase = '', demoMode = false }: MainLayoutProps
       ...(usageAnalyticsNavItem ? [usageAnalyticsNavItem] : []),
       ...(monitoringNavItem ? [monitoringNavItem] : []),
       ...(usageMaintenanceNavItem ? [usageMaintenanceNavItem] : []),
+      sourceBalanceNavItem,
+      {
+        path: '/source-models',
+        label: t('nav.source_models'),
+        shortLabel: navShortLabel('nav.source_models', t('nav.source_models')),
+        icon: sidebarIcons.sourceModels,
+      },
     ],
     [
       {

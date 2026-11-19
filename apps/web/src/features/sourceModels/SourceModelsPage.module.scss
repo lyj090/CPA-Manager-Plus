@@ -1,0 +1,96 @@
+.page {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  color: var(--text-primary);
+}
+
+.infoBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: var(--bg-primary);
+}
+
+.infoMain {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.gapPill {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--warning, #b86e00) 16%, transparent);
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.gapRow td:first-child {
+  box-shadow: inset 3px 0 0 var(--warning, #b86e00);
+}
+
+.metaPill {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.statePanel {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 32px 16px;
+}
+
+.stateTitle {
+  font-weight: 700;
+}
+
+.stateText {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.tableWrap {
+  overflow: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th,
+  td {
+    padding: 8px 12px;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  th {
+    color: var(--text-secondary);
+    font-weight: 700;
+  }
+
+  tr + tr td {
+    border-top: 1px solid var(--border-color);
+  }
+}

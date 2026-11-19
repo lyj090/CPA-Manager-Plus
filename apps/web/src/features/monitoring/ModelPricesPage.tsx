@@ -21,6 +21,7 @@ import {
 import attentionStyles from '@/features/model-price-attention/ModelPriceAttention.module.scss';
 import {
   applyCandidatePrice,
+  buildCandidateMap,
   buildModelPriceRows,
   buildModelPriceSummary,
   buildPriceFromDraft,
@@ -33,13 +34,17 @@ import {
   formatContextThreshold,
   formatPriceUnit,
   formatServiceTierRule,
+  classifyPriceConfidence,
   getModelPriceCandidateIdentity,
   groupModelPriceCandidatesBySource,
+  mergeModelPricesByCanonicalName,
+  PRICE_UNIT_LABEL,
   resolveContextTierDisplayPrice,
   resolveServiceTierDisplayPrice,
   validatePriceDraft,
   type ContextTierDraft,
   type ModelPriceFilter,
+  type PriceConfidence,
   type PriceDraft,
   type PriceRuleDraft,
   type ServiceTierDraft,
@@ -49,6 +54,28 @@ import { resolveModelPriceSyncNotification } from './model/modelPriceSyncFeedbac
 import styles from './ModelPricesPage.module.scss';
 
 const FILTERS: ModelPriceFilter[] = ['all', 'missing', 'candidates', 'saved'];
+
+/** Confidence tag styling + the i18n key pair explaining it. */
+const CONFIDENCE_STYLE: Record<PriceConfidence, keyof typeof styles> = {
+  official: 'confidenceOfficial',
+  aggregator: 'confidenceAggregator',
+  manual: 'confidenceManual',
+  none: 'confidenceAggregator',
+};
+
+const CONFIDENCE_LABEL_KEY: Record<PriceConfidence, string> = {
+  official: 'model_prices.confidence_official',
+  aggregator: 'model_prices.confidence_aggregator',
+  manual: 'model_prices.confidence_manual',
+  none: 'model_prices.confidence_none',
+};
+
+const CONFIDENCE_HINT_KEY: Record<PriceConfidence, string> = {
+  official: 'model_prices.confidence_official_hint',
+  aggregator: 'model_prices.confidence_aggregator_hint',
+  manual: 'model_prices.confidence_manual_hint',
+  none: 'model_prices.confidence_none_hint',
+};
 
 const RULE_PRICE_FIELDS = [
   { field: 'prompt', labelKey: 'usage_stats.model_price_prompt' },
@@ -103,15 +130,33 @@ export function ModelPricesPage() {
     ? featureAvailability.managerServiceBase
     : '';
 
+  // Prefixes are routing detail, not pricing: collapse `wb/x`, `ds/x`, `cctq/x`
+  // onto one price per model so a route cannot change what a model costs, and
+  // the table shows one row per model instead of one per route.
+  const canonicalModelPrices = useMemo(
+    () => mergeModelPricesByCanonicalName(modelPrices),
+    [modelPrices]
+  );
+
   const syncModels = useMemo(
-    () => buildSyncPriceModelsFromSummary(usageSummary, modelPrices),
-    [modelPrices, usageSummary]
+    () =>
+      buildSyncPriceModelsFromSummary(usageSummary, canonicalModelPrices, attention.runtimeModels),
+    [attention.runtimeModels, canonicalModelPrices, usageSummary]
   );
 
   const candidateSets = useMemo(() => syncResult?.candidates ?? [], [syncResult?.candidates]);
+  // Candidates arrive keyed by the prefixed runtime name; the table is keyed by
+  // canonical name, so map them once rather than rescanning per row.
+  const candidateMap = useMemo(() => buildCandidateMap(candidateSets), [candidateSets]);
   const rows = useMemo(
-    () => buildModelPriceRows(usageSummary, modelPrices, candidateSets, attention.runtimeModels),
-    [attention.runtimeModels, candidateSets, modelPrices, usageSummary]
+    () =>
+      buildModelPriceRows(
+        usageSummary,
+        canonicalModelPrices,
+        candidateSets,
+        attention.runtimeModels
+      ),
+    [attention.runtimeModels, candidateSets, canonicalModelPrices, usageSummary]
   );
   const summary = useMemo(() => buildModelPriceSummary(rows), [rows]);
   const visibleRows = useMemo(
@@ -636,7 +681,10 @@ export function ModelPricesPage() {
                 <tr>
                   <th>{t('usage_stats.model_name')}</th>
                   <th>{t('model_prices.calls')}</th>
-                  <th>{t('usage_stats.model_price_prompt')}</th>
+                  <th>
+                    {t('usage_stats.model_price_prompt')}
+                    <span className={styles.priceUnitNote}>{PRICE_UNIT_LABEL}</span>
+                  </th>
                   <th>{t('usage_stats.model_price_completion')}</th>
                   <th>{t('usage_stats.model_price_cache')}</th>
                   <th>{t('usage_stats.model_price_cache_read')}</th>
@@ -648,9 +696,7 @@ export function ModelPricesPage() {
               </thead>
               <tbody>
                 {visibleRows.map((row) => {
-                  const candidates =
-                    candidateSets.find((candidateSet) => candidateSet.model === row.model)
-                      ?.candidates ?? [];
+                  const candidates = candidateMap.get(row.model) ?? [];
                   const candidateGroups = groupModelPriceCandidatesBySource(candidates);
                   const requestedCandidateIdentity = selectedCandidates[row.model] || '';
                   const selectedCandidate =
@@ -679,6 +725,29 @@ export function ModelPricesPage() {
                               </span>
                             ) : null}
                           </strong>
+                          {row.estimatedPrice && row.hasPrice ? (
+                            <span
+                              className={styles.estimateBadge}
+                              data-testid={`estimate-badge-${row.model}`}
+                              title={t('model_prices.estimated_price_hint')}
+                            >
+                              {t('model_prices.estimated_price')}
+                            </span>
+                          ) : null}
+                          {row.routes.length > 0 ? (
+                            <span
+                              className={styles.routeBreakdown}
+                              data-testid={`route-breakdown-${row.model}`}
+                              title={t('model_prices.route_breakdown_hint')}
+                            >
+                              {row.routes
+                                .map(
+                                  (usage) =>
+                                    `${usage.route || t('model_prices.route_direct')} ${usage.calls}`
+                                )
+                                .join(' · ')}
+                            </span>
+                          ) : null}
                           {!row.hasPrice && candidates.length > 0 ? (
                             <span>{t('model_prices.needs_confirmation')}</span>
                           ) : !row.hasPrice ? (
@@ -744,6 +813,20 @@ export function ModelPricesPage() {
                             <span className={styles.sourceBadge}>
                               {row.price.source || 'manual'}
                             </span>
+                            {(() => {
+                              const confidence = classifyPriceConfidence(row.price);
+                              return (
+                                <span
+                                  className={`${styles.confidenceBadge} ${
+                                    styles[CONFIDENCE_STYLE[confidence]]
+                                  }`}
+                                  data-testid={`confidence-${row.model}`}
+                                  title={t(CONFIDENCE_HINT_KEY[confidence])}
+                                >
+                                  {t(CONFIDENCE_LABEL_KEY[confidence])}
+                                </span>
+                              );
+                            })()}
                             {row.price.sourceModelId ? (
                               <small>{row.price.sourceModelId}</small>
                             ) : null}

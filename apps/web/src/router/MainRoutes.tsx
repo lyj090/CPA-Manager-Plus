@@ -24,6 +24,8 @@ import { UsageMaintenancePage } from '@/pages/UsageMaintenancePage';
 import { MonitoringCenterPage } from '@/pages/MonitoringCenterPage';
 import { AccountActionCandidatesPage } from '@/pages/AccountActionCandidatesPage';
 import { ModelPricesPage } from '@/pages/ModelPricesPage';
+import { SourceBalancePage } from '@/pages/SourceBalancePage';
+import { SourceModelsPage } from '@/pages/SourceModelsPage';
 import { ConfigPage } from '@/pages/ConfigPage';
 import { LogsPage } from '@/pages/LogsPage';
 import { PluginResourcePage } from '@/pages/PluginResourcePage';
@@ -199,6 +201,8 @@ const mainRoutes: RouteObject[] = [
       </FeatureGate>
     ),
   },
+  { path: '/source-balance', element: <SourceBalancePage /> },
+  { path: '/source-models', element: <SourceModelsPage /> },
   {
     path: '/usage-maintenance',
     element: (

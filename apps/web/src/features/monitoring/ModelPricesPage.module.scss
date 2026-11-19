@@ -449,9 +449,74 @@
   font-weight: 800;
 }
 
+// Confidence tag: tells the reader whether a number is a vendor list price or a
+// reseller/inferred substitute, which is what makes a wrong price visible.
+.confidenceBadge {
+  width: fit-content;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: help;
+}
+
+.confidenceOfficial {
+  background: var(--data-badge-success-bg);
+  color: var(--data-badge-success-text);
+}
+
+.confidenceAggregator {
+  background: var(--data-badge-neutral-bg);
+  color: var(--data-badge-neutral-text);
+}
+
+.confidenceManual {
+  background: var(--data-badge-info-bg);
+  color: var(--data-badge-info-text);
+}
+
 .sourceContent small,
 .sourcePlaceholder {
   font: inherit;
+}
+
+// Estimate marker: the route has no published upstream price, so the number is
+// borrowed from a comparable model. Deliberately softer than a confidence tag —
+// the price itself is still the best available record.
+.estimateBadge {
+  width: fit-content;
+  padding: 1px 6px;
+  border: 1px dashed var(--data-badge-warning-border);
+  border-radius: 999px;
+  color: var(--data-badge-warning-text);
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: help;
+}
+
+// Per-route call split. The badge above says "some calls here are estimate-only";
+// this says *which* route carried them, so a model called through the Zhipu
+// subscription is never read as if it had gone through wb/.
+.routeBreakdown {
+  width: fit-content;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: help;
+}
+
+// Unit contract, stated once above the price columns instead of 5x per row.
+.priceUnitNote {
+  display: block;
+  margin-top: 2px;
+  color: var(--pricing-muted);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .actionsCell {

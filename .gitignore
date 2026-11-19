@@ -21,6 +21,7 @@ node_modules
 dist
 dist-demo
 dist-ssr
+dist-local/
 *.local
 skills
 .playwright-mcp/

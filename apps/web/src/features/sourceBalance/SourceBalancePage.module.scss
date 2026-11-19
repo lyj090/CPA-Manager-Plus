@@ -1,0 +1,293 @@
+.page {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  color: var(--text-primary);
+}
+
+.infoBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: var(--bg-primary);
+  box-shadow: var(--shadow);
+}
+
+.infoMain {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.metaPill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.staleBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--warning-border, var(--color-warning));
+  background: var(--warning-bg, transparent);
+  color: var(--warning-text, var(--color-warning));
+  font-size: 12px;
+  font-weight: 700;
+  cursor: help;
+}
+
+.staleHint {
+  padding: 8px 14px;
+  border: 1px dashed var(--warning-border, var(--color-warning));
+  border-radius: 12px;
+  background: var(--warning-bg, transparent);
+  color: var(--warning-text, var(--color-warning));
+  font-size: 12px;
+}
+
+.alertBanner {
+  padding: 10px 14px;
+  border: 1px solid var(--warning-border, var(--color-warning));
+  border-radius: 12px;
+  background: var(--warning-bg, transparent);
+  color: var(--warning-text, var(--color-warning));
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.statePanel {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 32px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: var(--bg-primary);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.stateTitle {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.stateText {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.command {
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-color);
+  font-family: var(--font-mono, 'Courier New', monospace);
+  font-size: 12px;
+  user-select: all;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  min-width: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: var(--bg-primary);
+  box-shadow: var(--shadow);
+}
+
+.balanceTable {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th,
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+}
+
+.statusOk {
+  color: var(--color-success);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.statusBad {
+  color: var(--color-danger);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.statusMuted {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.remainingCell {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.noteCell {
+  color: var(--text-secondary);
+  min-width: 180px;
+}
+
+.expandButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--surface-subtle-hover);
+    color: var(--text-primary);
+  }
+}
+
+.chevron,
+.chevronOpen {
+  display: inline-flex;
+  transition: transform 150ms ease;
+}
+
+.chevronOpen {
+  transform: rotate(90deg);
+}
+
+.quotaRow td {
+  background: var(--surface-subtle);
+}
+
+.quotaTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+
+  th,
+  td {
+    padding: 6px 10px;
+    border-bottom: 1px dashed var(--border-color);
+    text-align: left;
+    white-space: nowrap;
+    color: var(--text-secondary);
+  }
+
+  th {
+    font-weight: 700;
+  }
+
+  tr:last-child td {
+    border-bottom: 0;
+  }
+}
+
+/* 订阅制额度窗口（GLM 等）：逐窗口进度条 + 重置时间。
+   轨道填充的是「剩余」，所以条越短越危险，与 AccountsPage 的 quotaTrack 同语义。 */
+.quotaWindows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px;
+}
+
+.quotaWindowRow {
+  display: grid;
+  grid-template-columns: 48px minmax(140px, 1fr) 110px 120px;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.quotaWindowLabel {
+  color: var(--text-secondary);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.quotaTrack {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border-color) 58%, transparent);
+}
+
+.quotaBar {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.quotaBarGood {
+  background: var(--accounts-success, #22c55e);
+}
+
+.quotaBarWarn {
+  background: var(--accounts-warning, #eab308);
+}
+
+.quotaBarBad {
+  background: var(--accounts-danger, #ef4444);
+}
+
+.quotaWindowValue {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* 倒计时用更弱的色阶：它是解释性的补充，不该和百分比抢注意力 */
+.quotaWindowMeta {
+  color: var(--text-tertiary, var(--text-secondary));
+  white-space: nowrap;
+  opacity: 0.85;
+}
+
+/* MCP 无进度条：占住轨道那一列，让计数与重置时间对齐上面的百分比行 */
+.quotaWindowCount {
+  grid-column: 2 / span 2;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}

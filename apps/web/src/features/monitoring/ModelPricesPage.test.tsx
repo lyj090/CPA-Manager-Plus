@@ -227,6 +227,10 @@ describe('ModelPricesPage Attention UI', () => {
   });
 
   it('acknowledges only (pendingSnapshot ∩ syncModels) when runtime discovery fails with fallback sync success', async () => {
+    // Discovery refresh failed, but the last-known runtime set still contains
+    // known-model-A; a historical usage name alone must not become syncable.
+    mockAttentionState.runtimeModels = ['known-model-A'];
+    mockAttentionState.unpricedModels = ['known-model-A'];
     mockAttentionState.capturePendingSnapshot = vi.fn().mockReturnValue({
       scope: 'http://localhost:18317',
       models: ['known-model-A', 'runtime-only-model-B'],
