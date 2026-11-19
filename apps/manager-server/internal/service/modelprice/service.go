@@ -20,6 +20,7 @@ import (
 	modelpricerepo "github.com/seakee/cpa-manager-plus/apps/manager-server/internal/repository/modelprice"
 	"github.com/seakee/cpa-manager-plus/apps/manager-server/internal/service/cpa"
 	"github.com/seakee/cpa-manager-plus/apps/manager-server/internal/store"
+	"github.com/seakee/cpa-manager-plus/apps/manager-server/internal/usageidentity"
 )
 
 var ErrStructureChangeAfterRawDeletion = modelpricerepo.ErrStructureChangeAfterRawDeletion
@@ -332,7 +333,9 @@ func (s *Service) Sync(ctx context.Context, req SyncRequest) (SyncResult, error)
 			runtimeModelCount = len(runtimeModels)
 			allModels := make([]string, 0, len(knownModels)+len(runtimeModels))
 			allModels = append(allModels, knownModels...)
-			allModels = append(allModels, runtimeModels...)
+			for _, name := range runtimeModels {
+				allModels = append(allModels, usageidentity.CanonicalPriceModel(name))
+			}
 			effectiveModels = normalizedRequestedModels(allModels)
 		}
 
@@ -435,7 +438,10 @@ func (s *Service) RuntimeModelPricingStatus(ctx context.Context) (RuntimeModelPr
 
 	unpricedModels := make([]string, 0, len(normalizedModels))
 	for _, m := range normalizedModels {
-		if _, exists := prices[m]; !exists {
+		if _, exists := prices[m]; exists {
+			continue
+		}
+		if _, exists := prices[usageidentity.CanonicalPriceModel(m)]; !exists {
 			unpricedModels = append(unpricedModels, m)
 		}
 	}

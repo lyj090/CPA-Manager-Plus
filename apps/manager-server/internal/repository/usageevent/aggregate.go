@@ -31,16 +31,8 @@ func pricingBandedUsageEventsCTEWithBaseFilter(baseFilter string) string {
 ), pricing_resolved_events as (
 	select
 		pricing_base_events.*,
-		case
-			when billing_price.model is not null then billing_model_value
-			when analytics_price.model is not null then pricing_base_events.analytics_model_value
-			when display_price.model is not null then pricing_base_events.requested_model_value
-			else billing_model_value
-		end as pricing_model_value
+		%s as pricing_model_value
 	from pricing_base_events
-	left join model_prices billing_price on billing_price.model = pricing_base_events.billing_model_value
-	left join model_prices analytics_price on analytics_price.model = pricing_base_events.analytics_model_value
-	left join model_prices display_price on display_price.model = pricing_base_events.requested_model_value
 ), banded_usage_events as (
 	select
 		pricing_resolved_events.*,
@@ -51,7 +43,7 @@ func pricingBandedUsageEventsCTEWithBaseFilter(baseFilter string) string {
 				and pricing_resolved_events.normalized_input_tokens_value > tier.threshold_tokens
 		), %d) as context_threshold_tokens_value
 	from pricing_resolved_events
-	)`, requestedModelExpr, analyticsModelExpr, analyticsModelExpr, whereClause, model.ModelPriceBaseContextThreshold)
+	)`, requestedModelExpr, analyticsModelExpr, analyticsModelExpr, whereClause, usageidentity.SQLModelPriceKeyExpression("pricing_base_events.billing_model_value", "pricing_base_events.analytics_model_value", "pricing_base_events.requested_model_value"), model.ModelPriceBaseContextThreshold)
 }
 
 var pricingBandedUsageEventsCTE = pricingBandedUsageEventsCTEWithBaseFilter("")

@@ -15,8 +15,17 @@ import (
 const ModelFormatVersion = "1"
 
 const sqliteAnalyticsModelFunction = "cpamp_analytics_model"
+const sqlitePriceModelFunction = "cpamp_price_model"
 
 func init() {
+	modernsqlite.MustRegisterDeterministicScalarFunction(
+		sqlitePriceModelFunction, 1,
+		func(_ *modernsqlite.FunctionContext, args []driver.Value) (driver.Value, error) {
+			value, _ := args[0].(string)
+			return CanonicalPriceModel(value), nil
+		},
+	)
+
 	modernsqlite.MustRegisterDeterministicScalarFunction(
 		sqliteAnalyticsModelFunction,
 		1,
@@ -100,4 +109,32 @@ func SQLEffectiveRequestedModelExpression(modelExpression, requestedModelExpress
 // of AnalyticsModelForRequest for trusted internal column expressions.
 func SQLRequestAnalyticsModelExpression(modelExpression, requestedModelExpression string) string {
 	return SQLAnalyticsModelExpression(SQLEffectiveRequestedModelExpression(modelExpression, requestedModelExpression))
+}
+
+// CanonicalPriceModel removes the CPA route namespace from a price lookup.
+// The historical cpa-gpt alias still appears in immutable usage events.
+func CanonicalPriceModel(name string) string {
+	name = AnalyticsModel(strings.TrimSpace(name))
+	if _, native, ok := strings.Cut(name, "/"); ok && native != "" {
+		name = native
+	}
+	if strings.HasPrefix(name, "cpa-gpt-") {
+		return strings.TrimPrefix(name, "cpa-")
+	}
+	return name
+}
+
+// SQLModelPriceKeyExpression selects an existing price key in candidate order.
+// Explicit price keys take precedence over the shared bare-model prices.
+func SQLModelPriceKeyExpression(billingModel string, alternatives ...string) string {
+	candidates := append([]string{billingModel}, alternatives...)
+	lookups := make([]string, 0, len(candidates)*2+1)
+	for _, candidate := range candidates {
+		lookups = append(lookups, "(select model from model_prices where model = "+candidate+")")
+	}
+	for _, candidate := range candidates {
+		lookups = append(lookups, "(select model from model_prices where model = "+sqlitePriceModelFunction+"("+candidate+"))")
+	}
+	lookups = append(lookups, billingModel)
+	return "coalesce(" + strings.Join(lookups, ", ") + ")"
 }

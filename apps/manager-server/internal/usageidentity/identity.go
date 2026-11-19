@@ -188,7 +188,7 @@ func LegacyAccountKey(fields Fields) (string, bool) {
 }
 
 func PricingStructureRevision(modelPriceRevision string) string {
-	return fmt.Sprintf("model-%s:identity-%s:codex-%s:%s", ModelFormatVersion, FormatVersion, CodexIdentityRevision, strings.TrimSpace(modelPriceRevision))
+	return fmt.Sprintf("model-%s:identity-%s:codex-%s:price-key-v2:%s", ModelFormatVersion, FormatVersion, CodexIdentityRevision, strings.TrimSpace(modelPriceRevision))
 }
 
 func AccountHistoryStructureRevision() string {

@@ -323,6 +323,23 @@ func TestLegacyLongContextUsesExplicitNonPriorityServiceTierPrice(t *testing.T) 
 	}
 }
 
+func TestRoutedModelUsesCanonicalContextAndProcessingPrice(t *testing.T) {
+	prices := map[string]model.ModelPrice{
+		"gpt-6.2-sol": {
+			Prompt: 2, Completion: 10, Cache: 0.1,
+			RawJSON: `{"context_processing_multipliers":{"priority":2}}`,
+			ContextTiers: []model.ModelPriceContextTier{
+				{ThresholdTokens: 272_000, Prompt: 4, Completion: 15, PromptConfigured: true, CompletionConfigured: true},
+			},
+		},
+	}
+	tokens := ModelTokens{InputTokens: 1_000_000, OutputTokens: 1_000_000, ContextThresholdTokens: 272_000}
+	cost := CostForModelCandidatesWithServiceTier([]string{"auth/cpa-gpt-6.2-sol"}, "priority", tokens, prices)
+	if math.Abs(cost-38) > 0.000001 {
+		t.Fatalf("long context priority cost = %v, want 38", cost)
+	}
+}
+
 func TestCostCandidatesUseClassifiedPricingModel(t *testing.T) {
 	prices := map[string]model.ModelPrice{
 		"display-model": {Prompt: 1},

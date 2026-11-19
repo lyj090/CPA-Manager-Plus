@@ -31,16 +31,8 @@ func monitoringBandedEventsCTE(whereClause string) string {
 	), priced_events as (
 		select
 			base_events.*,
-			case
-				when billing_price.model is not null then billing_model_value
-				when analytics_price.model is not null then base_events.analytics_model_value
-				when display_price.model is not null then base_events.requested_model_value
-				else billing_model_value
-			end as pricing_model_value
+			%s as pricing_model_value
 		from base_events
-		left join model_prices billing_price on billing_price.model = base_events.billing_model_value
-		left join model_prices analytics_price on analytics_price.model = base_events.analytics_model_value
-		left join model_prices display_price on display_price.model = base_events.requested_model_value
 	), banded_events as (
 		select
 			priced_events.*,
@@ -51,7 +43,7 @@ func monitoringBandedEventsCTE(whereClause string) string {
 					and priced_events.normalized_input_tokens_value > tier.threshold_tokens
 			), %d) as context_threshold_tokens_value
 		from priced_events
-	)`, requestedModelExpression, analyticsModelExpression, analyticsModelExpression, whereClause, model.ModelPriceBaseContextThreshold)
+	)`, requestedModelExpression, analyticsModelExpression, analyticsModelExpression, whereClause, usageidentity.SQLModelPriceKeyExpression("base_events.billing_model_value", "base_events.analytics_model_value", "base_events.requested_model_value"), model.ModelPriceBaseContextThreshold)
 }
 
 // codexAccountDailyExcludedSQL identifies Codex events whose legacy Workspace

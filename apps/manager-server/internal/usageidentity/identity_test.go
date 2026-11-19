@@ -356,7 +356,7 @@ func TestSQLAccountKeyExpressionMatchesGo(t *testing.T) {
 }
 
 func TestPricingStructureRevisionIncludesIdentityFormat(t *testing.T) {
-	if got := PricingStructureRevision("price-revision"); got != "model-1:identity-3:codex-2:price-revision" {
+	if got := PricingStructureRevision("price-revision"); got != "model-1:identity-3:codex-2:price-key-v2:price-revision" {
 		t.Fatalf("revision = %q", got)
 	}
 }

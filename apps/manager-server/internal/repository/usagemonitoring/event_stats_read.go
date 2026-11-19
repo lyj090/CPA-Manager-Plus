@@ -154,16 +154,8 @@ func (r *repository) LoadModelStats(ctx context.Context, filter AnalyticsFilter)
 		select
 			base_events.*,
 			coalesce(nullif(base_events.resolved_model, ''), base_events.analytics_model) as billing_model_value,
-			case
-				when billing_price.model is not null then coalesce(nullif(base_events.resolved_model, ''), base_events.analytics_model)
-				when analytics_price.model is not null then base_events.analytics_model
-				when display_price.model is not null then base_events.model
-				else coalesce(nullif(base_events.resolved_model, ''), base_events.analytics_model)
-			end as pricing_model_value
+			%s as pricing_model_value
 		from base_events
-		left join model_prices billing_price on billing_price.model = coalesce(nullif(base_events.resolved_model, ''), base_events.analytics_model)
-		left join model_prices analytics_price on analytics_price.model = base_events.analytics_model
-		left join model_prices display_price on display_price.model = base_events.model
 	), banded_events as (
 		select
 			priced_events.*,
@@ -189,16 +181,16 @@ func (r *repository) LoadModelStats(ctx context.Context, filter AnalyticsFilter)
 		coalesce(sum(max(max(cached_tokens, cache_tokens) - max(cache_read_tokens, 0) - max(cache_creation_tokens, 0), 0)), 0),
 		coalesce(sum(cache_read_tokens), 0),
 		coalesce(sum(cache_creation_tokens), 0),
-		coalesce(sum(case when normalized_total_input_tokens > %[3]d then normalized_total_input_tokens else 0 end), 0),
-		coalesce(sum(case when normalized_total_input_tokens > %[3]d then output_tokens else 0 end), 0),
-		coalesce(sum(case when normalized_total_input_tokens > %[3]d then max(max(cached_tokens, cache_tokens) - max(cache_read_tokens, 0) - max(cache_creation_tokens, 0), 0) else 0 end), 0),
-		coalesce(sum(case when normalized_total_input_tokens > %[3]d then cache_read_tokens else 0 end), 0),
-		coalesce(sum(case when normalized_total_input_tokens > %[3]d then cache_creation_tokens else 0 end), 0),
+		coalesce(sum(case when normalized_total_input_tokens > %[4]d then normalized_total_input_tokens else 0 end), 0),
+		coalesce(sum(case when normalized_total_input_tokens > %[4]d then output_tokens else 0 end), 0),
+		coalesce(sum(case when normalized_total_input_tokens > %[4]d then max(max(cached_tokens, cache_tokens) - max(cache_read_tokens, 0) - max(cache_creation_tokens, 0), 0) else 0 end), 0),
+		coalesce(sum(case when normalized_total_input_tokens > %[4]d then cache_read_tokens else 0 end), 0),
+		coalesce(sum(case when normalized_total_input_tokens > %[4]d then cache_creation_tokens else 0 end), 0),
 		coalesce(sum(total_tokens), 0)
 	from banded_events
 		group by analytics_model, billing_model_value, pricing_model_value,
 		context_threshold_tokens_value, service_tier
-	order by count(*) desc`, source, model.ModelPriceBaseContextThreshold, usage.LongContextInputTokenThreshold)
+	order by count(*) desc`, source, usageidentity.SQLModelPriceKeyExpression("coalesce(nullif(base_events.resolved_model, ''), base_events.analytics_model)", "base_events.analytics_model", "base_events.model"), model.ModelPriceBaseContextThreshold, usage.LongContextInputTokenThreshold)
 	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, state, false, err

@@ -4,6 +4,7 @@ import { normalizeAuthIndex } from './authIndex';
 import { parseTimestampMs } from './timestamp';
 import { normalizeAnalyticsModel } from './analyticsModel';
 import { sha256Hex } from './apiKeyHash';
+import { canonicalModelName } from './modelCanonicalName';
 
 export { normalizeAuthIndex };
 export { normalizeAnalyticsModel } from './analyticsModel';
@@ -1199,6 +1200,25 @@ export function extractTotalTokens(detail: unknown): number {
   );
 }
 
+/**
+ * Finds the price for a runtime model id, falling back to the name without its
+ * routing prefix.
+ *
+ * A prefix such as `wb/` or `ds/` selects a gateway or an account pool, not a
+ * different model, so it must not decide the price. Exact keys still win, which
+ * keeps an intentionally distinct per-route price working.
+ */
+const lookupModelPrice = (
+  modelPrices: Record<string, ModelPrice>,
+  modelName: string
+): ModelPrice | undefined => {
+  if (!modelName) return undefined;
+  const exact = modelPrices[modelName];
+  if (exact) return exact;
+  const canonical = canonicalModelName(modelName);
+  return canonical === modelName ? undefined : modelPrices[canonical];
+};
+
 export function calculateCost(
   detail: Pick<
     UsageDetail,
@@ -1225,16 +1245,22 @@ export function calculateCost(
   const resolvedModel = detail.__resolvedModel || '';
   const analyticsModel = detail.__modelName || '';
   const requestedModel = detail.__requestedModel || analyticsModel;
-  const resolvedPrice = resolvedModel ? modelPrices[resolvedModel] : undefined;
-  const analyticsPrice = analyticsModel ? modelPrices[analyticsModel] : undefined;
-  const requestedPrice = requestedModel ? modelPrices[requestedModel] : undefined;
+  const resolvedPrice = lookupModelPrice(modelPrices, resolvedModel);
+  const analyticsPrice = lookupModelPrice(modelPrices, analyticsModel);
+  const requestedPrice = lookupModelPrice(modelPrices, requestedModel);
   const behaviorModel = resolvedModel || analyticsModel || requestedModel;
   const behaviorFallback = getOfficialGpt56Price(behaviorModel);
   const officialCandidatePrice =
     getOfficialGpt56Price(resolvedModel) ||
     getOfficialGpt56Price(analyticsModel) ||
     getOfficialGpt56Price(requestedModel);
-  const configuredPrice = resolvedPrice || analyticsPrice || requestedPrice;
+  const configuredPrice =
+    modelPrices[resolvedModel] ||
+    modelPrices[analyticsModel] ||
+    modelPrices[requestedModel] ||
+    resolvedPrice ||
+    analyticsPrice ||
+    requestedPrice;
   const basePrice = configuredPrice
     ? {
         ...configuredPrice,
@@ -1331,11 +1357,25 @@ export function calculateCost(
     (completionTokens / TOKENS_PER_PRICE_UNIT) * completionPrice * outputMultiplier;
 
   const multiplier =
-    longContextOverridesServiceTier || contextTier || serviceTierPrice
-      ? 1
-      : getServiceTierMultiplier(behaviorModel, serviceTier);
+    contextTier
+      ? contextProcessingMultiplier(basePrice, normalizedServiceTier)
+      : longContextOverridesServiceTier || serviceTierPrice
+        ? 1
+        : getServiceTierMultiplier(behaviorModel, serviceTier);
   const total = standardCost * multiplier;
   return Number.isFinite(total) && total > 0 ? total : 0;
+}
+
+function contextProcessingMultiplier(price: ModelPrice, tier: string): number {
+  if (!tier || tier === 'default' || !price.rawJson) return 1;
+  try {
+    const multiplier: unknown = JSON.parse(price.rawJson)?.context_processing_multipliers?.[tier];
+    return typeof multiplier === 'number' && Number.isFinite(multiplier) && multiplier > 0
+      ? multiplier
+      : 1;
+  } catch {
+    return 1;
+  }
 }
 
 function selectContextTierPrice(

@@ -8,6 +8,7 @@ import {
   createPriceDraft,
   filterModelPriceRows,
   formatContextThreshold,
+  formatPriceAmount,
   formatServiceTierRule,
   getModelPriceCandidateIdentity,
   groupModelPriceCandidatesBySource,
@@ -37,11 +38,19 @@ const usageSummary = {
 };
 
 describe('modelPricesPageModel', () => {
-  it('builds sync models from requested, resolved, and saved prices', () => {
+  it('shows ordinary prices with three decimals without hiding sub-cent values', () => {
+    expect(formatPriceAmount(0)).toBe('0.000');
+    expect(formatPriceAmount(1.2)).toBe('1.200');
+    expect(formatPriceAmount(10.18)).toBe('10.180');
+    expect(formatPriceAmount(0.0036)).toBe('0.004');
+    expect(formatPriceAmount(0.0005)).toBe('5.000e-4');
+  });
+
+  it('builds sync models from active runtime, requested, resolved, and saved prices', () => {
     expect(
       buildSyncPriceModelsFromSummary(usageSummary, {
         'manual-model': { prompt: 1, completion: 2, cache: 0.5 },
-      })
+      }, ['alias-fast', 'gpt-5.5'])
     ).toEqual(['alias-fast', 'gpt-5.5', 'manual-model']);
   });
 

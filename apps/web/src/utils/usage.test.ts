@@ -942,6 +942,59 @@ describe('calculateCost model price preference', () => {
     expect(cost).toBeCloseTo(0.5);
   });
 
+  it('prices a prefixed model from the bare entry', () => {
+    // `wb/` selects a gateway, not a different model: the cost must match the
+    // bare name rather than falling through to zero. Kept at 100k tokens so the
+    // gpt-5.5 long-context premium (>272k input doubles cost) does not apply.
+    const cost = calculateCost(
+      {
+        tokens: { input_tokens: 100_000, output_tokens: 0 },
+        __modelName: 'gpt-5.5',
+        __resolvedModel: 'wb/gpt-5.5',
+      },
+      prices
+    );
+    expect(cost).toBeCloseTo(0.5);
+  });
+
+  it('lets an exact per-route price override the bare entry', () => {
+    const cost = calculateCost(
+      {
+        tokens: { input_tokens: 100_000, output_tokens: 0 },
+        __modelName: 'gpt-5.5',
+        __resolvedModel: 'wb/gpt-5.5',
+      },
+      { ...prices, 'wb/gpt-5.5': { prompt: 1, completion: 2, cache: 0.1 } }
+    );
+    expect(cost).toBeCloseTo(0.1);
+  });
+
+  it('gives two prefixes of one model the same cost', () => {
+    const tokens = { input_tokens: 100_000, output_tokens: 0 };
+    const viaWorkBuddy = calculateCost(
+      { tokens, __modelName: 'gpt-5.5', __resolvedModel: 'wb/gpt-5.5' },
+      prices
+    );
+    const viaDeepSeek = calculateCost(
+      { tokens, __modelName: 'gpt-5.5', __resolvedModel: 'ds/gpt-5.5' },
+      prices
+    );
+    expect(viaWorkBuddy).toBeCloseTo(viaDeepSeek);
+    expect(viaWorkBuddy).toBeCloseTo(0.5);
+  });
+
+  it('prices the retired gateway cpa alias from its native model', () => {
+    const cost = calculateCost(
+      {
+        tokens: { input_tokens: 100_000, output_tokens: 0 },
+        __modelName: 'auth/cpa-gpt-5.5',
+        __resolvedModel: 'auth/cpa-gpt-5.5',
+      },
+      prices
+    );
+    expect(cost).toBeCloseTo(0.5);
+  });
+
   it('falls back to requested alias when resolved is absent', () => {
     const cost = calculateCost(
       {

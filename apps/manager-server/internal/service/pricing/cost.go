@@ -2,9 +2,12 @@
 package pricing
 
 import (
+	"encoding/json"
+	"math"
 	"strings"
 
 	"github.com/seakee/cpa-manager-plus/apps/manager-server/internal/model"
+	"github.com/seakee/cpa-manager-plus/apps/manager-server/internal/usageidentity"
 )
 
 // PerMillion divides by one million to convert token-priced units (per 1M tokens).
@@ -214,6 +217,11 @@ func CostForModelCandidatesWithServiceTier(modelNames []string, serviceTier stri
 		return costForPriceWithServiceTier(behaviorModel, serviceTier, tokens, price)
 	}
 	for _, modelName := range candidates {
+		if price, ok := prices[usageidentity.CanonicalPriceModel(modelName)]; ok {
+			return costForPriceWithServiceTier(behaviorModel, serviceTier, tokens, price)
+		}
+	}
+	for _, modelName := range candidates {
 		price, ok := officialGPT56Price(modelName)
 		if !ok {
 			continue
@@ -275,7 +283,7 @@ func supportsLongContextPremium(modelName string) bool {
 
 func costForPriceWithServiceTier(modelName, serviceTier string, tokens ModelTokens, price model.ModelPrice) float64 {
 	if activeContextTier(tokens, price) {
-		return costForPrice(modelName, tokens, price)
+		return costForPrice(modelName, tokens, price) * contextProcessingMultiplier(price, serviceTier)
 	}
 	legacyLongContext := len(price.ContextTiers) == 0 && supportsLongContextPremium(modelName) && tokens.LongInputTokens > 0
 	if legacyLongContext {
@@ -297,6 +305,24 @@ func costForPriceWithServiceTier(modelName, serviceTier string, tokens ModelToke
 		return costForPriceWithLegacyLongContext(modelName, tokens, effectivePrice, len(price.ContextTiers) == 0)
 	}
 	return costForPrice(modelName, tokens, price) * ServiceTierMultiplier(modelName, serviceTier)
+}
+
+// contextProcessingMultiplier applies published processing rates that scale
+// uniformly across context bands. A flat service tier alone is base-band only.
+func contextProcessingMultiplier(price model.ModelPrice, tier string) float64 {
+	tier = strings.ToLower(strings.TrimSpace(tier))
+	if tier == "" || tier == "default" || price.RawJSON == "" {
+		return 1
+	}
+	var metadata struct {
+		Multipliers map[string]float64 `json:"context_processing_multipliers"`
+	}
+	if json.Unmarshal([]byte(price.RawJSON), &metadata) == nil {
+		if multiplier := metadata.Multipliers[tier]; multiplier > 0 && !math.IsInf(multiplier, 0) {
+			return multiplier
+		}
+	}
+	return 1
 }
 
 func splitLegacyLongContextTokens(tokens ModelTokens) (ModelTokens, ModelTokens) {
@@ -343,6 +369,9 @@ func activeContextPrice(tokens ModelTokens, price model.ModelPrice) (model.Model
 
 func resolveModelPrice(modelName string, prices map[string]model.ModelPrice) (model.ModelPrice, bool) {
 	if price, ok := prices[modelName]; ok {
+		return price, true
+	}
+	if price, ok := prices[usageidentity.CanonicalPriceModel(modelName)]; ok {
 		return price, true
 	}
 	return officialGPT56Price(modelName)
